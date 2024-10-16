@@ -3302,7 +3302,7 @@ def command_shell(ctx):
     logger.info('----------------------CHECKING FOR CONNECTIONS---------------------')
     problem_hosts = checking_connections(ctx.hosts)
     if problem_hosts:
-        logger.info('Warning, there is some problematic hosts, start preparing hosts:')
+        logger.info('Warning, there are some problematic hosts, start preparing hosts:')
         for host in problem_hosts:
             name = host['name']
             logger.info(f'- {name}')
@@ -3310,81 +3310,40 @@ def command_shell(ctx):
         distribute_ceph_pub_key(problem_hosts, f'{ctx.output_dir}/ceph.pub')
     else:
         logger.info('All hosts connect, processing to the next steps')
-    # if ctx.precheck == True:
+
     logger.info('---------------------START EXECUTING BASH FILES--------------------')
     if cp.has_option('global', 'fsid') and cp.get('global', 'fsid') != ctx.fsid:
         raise Error('fsid does not match ceph.conf')
 
-    # Set daemon_type and daemon_id
-    if ctx.name:
-        if '.' in ctx.name:
-            (daemon_type, daemon_id) = ctx.name.split('.', 1)
-        else:
-            daemon_type = ctx.name
-            daemon_id = None
-    else:
-        daemon_type = 'shell'
-        daemon_id = None
-
-    if ctx.fsid and daemon_type in ceph_daemons():
-        make_log_dir(ctx, ctx.fsid)
-
-    if daemon_id and not ctx.fsid:
-        raise Error('must pass --fsid to specify cluster')
-    if not ctx.image:
-        ctx.image = "quay.ceph.io/ceph-ci/ceph:latest"
-    # Keyring
-    if not ctx.keyring:
-        keyring_file = f'{ctx.data_dir}/{ctx.fsid}/{CEPH_CONF_DIR}/{CEPH_KEYRING}'
-        if os.path.exists(keyring_file):
-            ctx.keyring = keyring_file
-        elif os.path.exists(CEPH_DEFAULT_KEYRING):
-            ctx.keyring = CEPH_DEFAULT_KEYRING
-
-    # Read the .sh file content if specified
+    # Set up the command to execute the .sh file
     if ctx.command and ctx.command[0].endswith('.sh'):
-        sh_file_path = ctx.command[0]
+        sh_file_path = os.path.abspath(ctx.command[0])
+        logger.info(f'Full path of the script: {sh_file_path}')
+        if not os.path.isfile(sh_file_path):
+            raise Error(f'{sh_file_path} not found')
         command = ['bash', sh_file_path]
     else:
         # Default to interactive bash if no command provided
         command = ['bash']
-    
-    container_args = ['-i', '-t', '-e', 'LANG=C', '-e', f'PS1={CUSTOM_PS1}']
 
-    mounts = get_container_mounts_for_type(ctx, ctx.fsid, daemon_type)
-    
-    if ctx.config:
-        mounts[pathify(ctx.config)] = '/etc/ceph/ceph.conf:z'
-    if ctx.keyring:
-        mounts[pathify(ctx.keyring)] = '/etc/ceph/ceph.keyring:z'
-
-    # Initialize the container and run the command
-    c = CephContainer(
-        ctx,
-        image=ctx.image,
-        entrypoint='doesnotmatter',
-        args=[],
-        container_args=container_args,
-        volume_mounts=mounts,
-        bind_mounts=[],
-        envs=ctx.env,
-        privileged=True
-    )
-
-    command = c.shell_cmd(command)
-
+    # If dry_run is True, print the command and exit
     if ctx.dry_run:
         print(' '.join(shlex.quote(arg) for arg in command))
         return 0
     else:
+        # Execute the bash file directly
         try:
             logger.info(f'Executing bash script directly: {sh_file_path}')
-            result = subprocess.run(f'bash {sh_file_path}', check=True)
+            result = subprocess.run(command, check=True)
             logger.info(f'Script executed with return code {result.returncode}')
         except FileNotFoundError:
             raise Error(f'{sh_file_path} not found')
         except subprocess.CalledProcessError as e:
             raise Error(f'Error executing bash script: {e}')
+
+    logger.info('---------------------BASH FILE EXECUTION COMPLETED-----------------')
+
+    return 0
 
 def check_host_ssh_and_ceph_pub(host):
     #Check SSH connection and if /etc/ceph/ceph.pub exists on the host
