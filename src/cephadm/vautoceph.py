@@ -3254,12 +3254,7 @@ def command_shell(ctx):
     # Read the .sh file content if specified
     if ctx.command and ctx.command[0].endswith('.sh'):
         sh_file_path = ctx.command[0]
-        try:
-            with open(sh_file_path, 'r') as sh_file:
-                script_commands = sh_file.read()
-            command = ['bash','-c', script_commands]
-        except FileNotFoundError:
-            raise Error(f'{sh_file_path} not found')
+        command = ['bash', sh_file_path]
     else:
         # Default to interactive bash if no command provided
         command = ['bash']
@@ -3292,8 +3287,14 @@ def command_shell(ctx):
         print(' '.join(shlex.quote(arg) for arg in command))
         return 0
     else:
-        print(' '.join(shlex.quote(arg) for arg in command))
-
+        try:
+            logger.info(f'Executing bash script directly: {sh_file_path}')
+            result = subprocess.run(command, check=True)
+            logger.info(f'Script executed with return code {result.returncode}')
+        except FileNotFoundError:
+            raise Error(f'{sh_file_path} not found')
+        except subprocess.CalledProcessError as e:
+            raise Error(f'Error executing bash script: {e}')
 
 
 def check_host_ssh_and_ceph_pub(host):
