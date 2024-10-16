@@ -3276,7 +3276,7 @@ def command_shell(ctx):
     c = CephContainer(
         ctx,
         image=ctx.image,
-        entrypoint='doesnotmatter',
+        entrypoint='bash',
         args=[],
         container_args=container_args,
         volume_mounts=mounts,
