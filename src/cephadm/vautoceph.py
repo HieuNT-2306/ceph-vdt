@@ -6262,8 +6262,8 @@ def generate_ceph_commands(hosts, services):
         if zap_result.returncode == 0:
             devices = json.loads(zap_result.stdout)
             for device in devices:
-                if device['status'] != 'Available' and device['device'] != '/dev/vda':  # Avoid zapping the OS disk
-                    commands.append(f"ceph orch device zap {removed_host} {device['device']} --force")
+                if device['ceph_device'] != True:  # Avoid zapping the OS disk
+                    commands.append(f"ceph orch device zap {removed_host} {device['path']} --force")
             
         commands.append(f"ceph orch host rm {removed_host} --force")
         commands.append(f"ceph osd crush rm {removed_host}")
