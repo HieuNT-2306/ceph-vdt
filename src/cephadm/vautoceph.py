@@ -3318,7 +3318,6 @@ def command_shell(ctx):
     # Set up the command to execute the .sh file
     if ctx.command and ctx.command[0].endswith('.sh'):
         sh_file_path = os.path.abspath(ctx.command[0])
-        logger.info(f'Full path of the script: {sh_file_path}')
         if not os.path.isfile(sh_file_path):
             raise Error(f'{sh_file_path} not found')
         command = ['bash', sh_file_path]
@@ -3328,12 +3327,13 @@ def command_shell(ctx):
 
     # If dry_run is True, print the command and exit
     if ctx.dry_run:
-        print(' '.join(shlex.quote(arg) for arg in command))
+        with open(sh_file_path, 'r') as file:
+            script_content = file.read()
+            print(script_content)
         return 0
     else:
         # Execute the bash file directly
         try:
-            logger.info(f'Executing bash script directly: {sh_file_path}')
             result = subprocess.run(command, check=True)
             logger.info(f'Script executed with return code {result.returncode}')
         except FileNotFoundError:
