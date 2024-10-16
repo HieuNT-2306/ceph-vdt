@@ -6259,8 +6259,6 @@ def generate_ceph_commands(hosts, services):
                 commands.append(f"ceph osd purge {osd_id} --yes-i-really-mean-it") 
 
         zap_result = subprocess.run(f"ceph orch device ls {removed_host} --format json-pretty", shell=True, capture_output=True, text=True)
-        zap_res = json.loads(zap_result.stdout)
-        print(json.dumps(zap_res, indent=4) )
         if zap_result.returncode == 0:
             zap_res = json.loads(zap_result.stdout)
             devices = zap_res[0]['devices']
