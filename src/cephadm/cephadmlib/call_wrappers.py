@@ -313,10 +313,11 @@ def call_throws(
 
 def call_timeout(ctx, command, timeout):
     print(f"Command to execute:")
-    for idx, cmd in enumerate(command):
+    filtered_command = [cmd for cmd in command if cmd is not None]
+    for idx, cmd in enumerate(filtered_command):
         print(f"Index {idx}: {cmd}")
     logger.debug(
-        'Running command (timeout=%s): %s' % (timeout, ' '.join(command))
+        'Running command (timeout=%s): %s' % (timeout, ' '.join(filtered_command))
     )
 
     def raise_timeout(command, timeout):

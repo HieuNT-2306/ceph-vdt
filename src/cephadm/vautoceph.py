@@ -3290,7 +3290,6 @@ def command_shell(ctx):
     if ctx.dry_run:
         print(' '.join(shlex.quote(arg) for arg in command))
         return 0
-    print(f"Command to execute: {command}")
 
     return call_timeout(ctx, command, ctx.timeout)
 
