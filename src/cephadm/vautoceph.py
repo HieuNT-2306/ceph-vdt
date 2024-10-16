@@ -3289,7 +3289,7 @@ def command_shell(ctx):
     else:
         try:
             logger.info(f'Executing bash script directly: {sh_file_path}')
-            result = subprocess.run(command, check=True)
+            result = subprocess.run(f'bash {sh_file_path}', check=True)
             logger.info(f'Script executed with return code {result.returncode}')
         except FileNotFoundError:
             raise Error(f'{sh_file_path} not found')
