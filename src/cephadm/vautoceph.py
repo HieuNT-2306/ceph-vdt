@@ -5882,7 +5882,6 @@ def translate_yaml_to_json(yaml_file):
         "_args": {
             key: yaml_data.get(key, default)
             for key, default in {
-                "image": None,
                 "docker": False,
                 "fsid": fsid,
                 "data_dir": "/var/lib/ceph",
