@@ -312,7 +312,9 @@ def call_throws(
 
 
 def call_timeout(ctx, command, timeout):
-    # type: (CephadmContext, List[str], int) -> int
+    print(f"Command to execute:")
+    for idx, cmd in enumerate(command):
+        print(f"Index {idx}: {cmd}")
     logger.debug(
         'Running command (timeout=%s): %s' % (timeout, ' '.join(command))
     )
