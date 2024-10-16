@@ -3241,7 +3241,8 @@ def command_shell(ctx):
 
     if daemon_id and not ctx.fsid:
         raise Error('must pass --fsid to specify cluster')
-
+    if not ctx.image:
+        ctx.image = "quay.ceph.io/ceph-ci/ceph:latest"
     # Keyring
     if not ctx.keyring:
         keyring_file = f'{ctx.data_dir}/{ctx.fsid}/{CEPH_CONF_DIR}/{CEPH_KEYRING}'
@@ -3276,7 +3277,7 @@ def command_shell(ctx):
     c = CephContainer(
         ctx,
         image=ctx.image,
-        entrypoint='ceph',
+        entrypoint='doesnotmatter',
         args=[],
         container_args=container_args,
         volume_mounts=mounts,
