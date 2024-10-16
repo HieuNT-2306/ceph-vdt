@@ -6262,6 +6262,7 @@ def generate_ceph_commands(hosts, services):
         if zap_result.returncode == 0:
             devices = json.loads(zap_result.stdout)
             for device in devices:
+                print(json.dumps(device, indent=4))
                 if device['ceph_device'] == 'true':
                     commands.append(f"ceph orch device zap {removed_host} {device['path']} --force")
             
