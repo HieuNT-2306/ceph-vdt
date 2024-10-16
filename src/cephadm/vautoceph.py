@@ -6178,7 +6178,6 @@ def distribute_ceph_pub_key(hosts, pub_key_path):
             logger.info(f"Failed to send key to {ip}. Error: {e}")
 
 
-#Function to generate ceph commands
 def generate_ceph_commands(hosts, services):
     commands = []
     base_services = ['mon', 'mgr']
@@ -6200,8 +6199,25 @@ def generate_ceph_commands(hosts, services):
         except json.JSONDecodeError:
             print("Failed to decode JSON from service output.")
             return {}
+        
+    def get_current_hosts():
+        result = subprocess.run(
+            "ceph orch host ls --format json-pretty",
+            shell=True,
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            print(f"Error executing command: {result.stderr}")
+            return []
+        try:
+            return json.loads(result.stdout)
+        except json.JSONDecodeError:
+            print("Failed to decode JSON from host list.")
+            return []
 
     current_services = get_services()
+    current_hosts = get_current_hosts()
 
     def find_service_name(service_type, hostname):
         for service in current_services:
@@ -6225,6 +6241,34 @@ def generate_ceph_commands(hosts, services):
         if service_type not in labels and service_pod:
             print(f"Removing {service_type} from {hostname}...")
             commands.append(f"ceph orch daemon rm {service_pod} --force")
+
+    new_host_names = {host['name'] for host in hosts}
+    for host in hosts:
+        print(host['name'])
+    removed_hosts = [ch['hostname'] for ch in current_hosts if ch['hostname'] not in new_host_names]
+    for host in removed_hosts:
+        print(removed_hosts)
+    for removed_host in removed_hosts:  
+        print(f"Cleaning up and removing host: {removed_host}")
+        commands.append("ceph orch pause")
+
+        for osd_service in current_services:
+            if osd_service['hostname'] == removed_host and osd_service['daemon_type'] == 'osd':
+                osd_id = osd_service['daemon_name']
+                commands.append(f"ceph orch daemon rm {osd_id} --force")
+                commands.append(f"ceph osd purge {osd_id} --yes-i-really-mean-it") 
+
+        zap_result = subprocess.run(f"ceph orch device ls {removed_host} --format json-pretty", shell=True, capture_output=True, text=True)
+        if zap_result.returncode == 0:
+            devices = json.loads(zap_result.stdout)
+            for device in devices:
+                if device['status'] != 'Available' and device['device'] != '/dev/vda':  # Avoid zapping the OS disk
+                    commands.append(f"ceph orch device zap {removed_host} {device['device']} --force")
+            
+        commands.append(f"ceph orch host rm {removed_host} --force")
+        commands.append(f"ceph osd crush rm {removed_host}")
+        commands.append(f"ceph orch resume")
+
 
     def get_labels_for_hostname(hostname, current_labels_list):
         for host in current_labels_list:
