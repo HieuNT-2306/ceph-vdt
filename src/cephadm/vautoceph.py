@@ -3256,7 +3256,7 @@ def command_shell(ctx):
         try:
             with open(sh_file_path, 'r') as sh_file:
                 script_commands = sh_file.read()
-            command = ['bash','-cdef', script_commands]
+            command = ['bash -c', script_commands]
         except FileNotFoundError:
             raise Error(f'{sh_file_path} not found')
     else:
