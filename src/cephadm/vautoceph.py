@@ -3291,111 +3291,9 @@ def command_shell(ctx):
     if ctx.dry_run:
         print(' '.join(shlex.quote(arg) for arg in command))
         return 0
-
-    return call_timeout(ctx, command, ctx.timeout)
-
-
-    # type: (CephadmContext) -> int
-    cp = read_config(ctx.config)
-    if cp.has_option('global', 'fsid') and \
-       cp.get('global', 'fsid') != ctx.fsid:
-        raise Error('fsid does not match ceph.conf')
-
-    if ctx.name:
-        if '.' in ctx.name:
-            (daemon_type, daemon_id) = ctx.name.split('.', 1)
-        else:
-            daemon_type = ctx.name
-            daemon_id = None
     else:
-        daemon_type = 'shell'  # get limited set of mounts
-        daemon_id = None
-
-    if ctx.fsid and daemon_type in ceph_daemons():
-        make_log_dir(ctx, ctx.fsid)
-
-    if daemon_id and not ctx.fsid:
-        raise Error('must pass --fsid to specify cluster')
-
-    # in case a dedicated keyring for the specified fsid is found we us it.
-    # Otherwise, use /etc/ceph files by default, if present.  We do this instead of
-    # making these defaults in the arg parser because we don't want an error
-    # if they don't exist.
-    if not ctx.keyring:
-        keyring_file = f'{ctx.data_dir}/{ctx.fsid}/{CEPH_CONF_DIR}/{CEPH_KEYRING}'
-        if os.path.exists(keyring_file):
-            ctx.keyring = keyring_file
-        elif os.path.exists(CEPH_DEFAULT_KEYRING):
-            ctx.keyring = CEPH_DEFAULT_KEYRING
-
-    container_args: List[str] = ['-i']
-    if ctx.fsid and daemon_id:
-        ident = DaemonIdentity(ctx.fsid, daemon_type, daemon_id)
-        mounts = get_container_mounts(
-            ctx, ident, no_config=bool(ctx.config),
-        )
-        binds = get_container_binds(ctx, ident)
-    else:
-        mounts = get_container_mounts_for_type(ctx, ctx.fsid, daemon_type)
-        binds = []
-    if ctx.config:
-        mounts[pathify(ctx.config)] = '/etc/ceph/ceph.conf:z'
-    if ctx.keyring:
-        mounts[pathify(ctx.keyring)] = '/etc/ceph/ceph.keyring:z'
-    if ctx.mount:
-        for _mount in ctx.mount:
-            split_src_dst = _mount.split(':')
-            mount = pathify(split_src_dst[0])
-            filename = os.path.basename(split_src_dst[0])
-            if len(split_src_dst) > 1:
-                dst = split_src_dst[1]
-                if len(split_src_dst) == 3:
-                    dst = '{}:{}'.format(dst, split_src_dst[2])
-                mounts[mount] = dst
-            else:
-                mounts[mount] = '/mnt/{}'.format(filename)
-    if ctx.command:
-        command = ctx.command
-    else:
-        command = ['bash']
-        container_args += [
-            '-t',
-            '-e', 'LANG=C',
-            '-e', 'PS1=%s' % CUSTOM_PS1,
-        ]
-        if ctx.fsid:
-            home = os.path.join(ctx.data_dir, ctx.fsid, 'home')
-            if not os.path.exists(home):
-                logger.debug('Creating root home at %s' % home)
-                makedirs(home, 0, 0, 0o660)
-                if os.path.exists('/etc/skel'):
-                    for f in os.listdir('/etc/skel'):
-                        if f.startswith('.bash'):
-                            shutil.copyfile(os.path.join('/etc/skel', f),
-                                            os.path.join(home, f))
-            mounts[home] = '/root'
-
-    for i in ctx.volume:
-        a, b = i.split(':', 1)
-        mounts[a] = b
-
-    c = CephContainer(
-        ctx,
-        image=ctx.image,
-        entrypoint='doesnotmatter',
-        args=[],
-        container_args=container_args,
-        volume_mounts=mounts,
-        bind_mounts=binds,
-        envs=ctx.env,
-        privileged=True)
-    command = c.shell_cmd(command)
-
-    if ctx.dry_run:
         print(' '.join(shlex.quote(arg) for arg in command))
-        return 0
 
-    return call_timeout(ctx, command, ctx.timeout)
 
 
 def check_host_ssh_and_ceph_pub(host):
@@ -5882,6 +5780,7 @@ def translate_yaml_to_json(yaml_file):
         "_args": {
             key: yaml_data.get(key, default)
             for key, default in {
+                "image": None,
                 "docker": False,
                 "fsid": fsid,
                 "data_dir": "/var/lib/ceph",
