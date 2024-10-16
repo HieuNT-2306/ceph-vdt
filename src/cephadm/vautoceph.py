@@ -6261,15 +6261,13 @@ def generate_ceph_commands(hosts, services):
         zap_result = subprocess.run(f"ceph orch device ls {removed_host} --format json-pretty", shell=True, capture_output=True, text=True)
         zap_res = json.loads(zap_result.stdout)
         print(json.dumps(zap_res, indent=4) )
-        print(zap_res['devices'])
-        # if zap_result.returncode == 0:
-        #     zap_res = json.loads(zap_result.stdout)
-        #     devices = zap_res['devices']
-        #     print(json.dumps(devices, indent=4))
-        #     for device in devices:
-        #         print(json.dumps(device, indent=4))
-        #         if device['ceph_device'] == 'true':
-        #             commands.append(f"ceph orch device zap {removed_host} {device['path']} --force")
+        if zap_result.returncode == 0:
+            zap_res = json.loads(zap_result.stdout)
+            devices = zap_res['devices']
+            for device in devices:
+                print(json.dumps(device, indent=4))
+                if device['ceph_device'] == 'true':
+                    commands.append(f"ceph orch device zap {removed_host} {device['path']} --force")
             
         commands.append(f"ceph orch host rm {removed_host} --force")
         commands.append(f"ceph osd crush rm {removed_host}")
