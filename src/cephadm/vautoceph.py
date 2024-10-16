@@ -6401,15 +6401,15 @@ def main() -> None:
     av: List[str] = []
     av = sys.argv[1:]
     if av[0] == 'apply':
-        try:
+        # try:
             json_data = translate_yaml_to_json(av[1])
             with tempfile.NamedTemporaryFile('w', delete=False, suffix='.json') as temp_file:
                 json.dump(json_data, temp_file, indent=4)
                 temp_file_path = temp_file.name
             ctx = load_context_from_file(temp_file_path)
-        except:
-            sys.stderr.write('No .yaml file specified or .yaml file doesn\'t exist, please pass a .yaml file\n')
-            sys.exit(1)
+        # except:
+        #     sys.stderr.write('No .yaml file specified or .yaml file doesn\'t exist, please pass a .yaml file\n')
+        #     sys.exit(1)
     else:
         ctx = cephadm_init_ctx(av)
 
