@@ -6243,15 +6243,10 @@ def generate_ceph_commands(hosts, services):
             commands.append(f"ceph orch daemon rm {service_pod} --force")
 
     new_host_names = {host['name'] for host in hosts}
-    for host in hosts:
-        print(host['name'])
     removed_hosts = [ch['hostname'] for ch in current_hosts if ch['hostname'] not in new_host_names]
-    for host in removed_hosts:
-        print(removed_hosts)
     for removed_host in removed_hosts:  
         print(f"Cleaning up and removing host: {removed_host}")
         commands.append("ceph orch pause")
-
         for osd_service in current_services:
             if osd_service['hostname'] == removed_host and osd_service['daemon_type'] == 'osd':
                 osd_id = osd_service['daemon_name']
