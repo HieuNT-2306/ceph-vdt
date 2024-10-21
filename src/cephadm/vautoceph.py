@@ -3217,7 +3217,9 @@ def command_shell(ctx):
         command = ['bash', sh_file_path]
     else:
         command = ['bash']
-        
+
+    logger.info('Generated commands list: ')
+
     with open(sh_file_path, 'r') as file:
         script_content = file.read()
         print(script_content)
