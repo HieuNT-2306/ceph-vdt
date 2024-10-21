@@ -87,7 +87,7 @@ services:
       port: 8888
       count-per-host: 1
   osd_dry_run: true
-  osds:
+  add-osds:
     - service-id: osd_spec_hdd
       placement: 
         hosts:
@@ -99,6 +99,10 @@ services:
         data_devices:
           rotational: 1
           size: '100G'
+  remove-osds:
+    - osd.1 
+    - osd.2
+    - osd.4
 
 volume: []
 no_hosts: false

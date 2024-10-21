@@ -3229,7 +3229,7 @@ def command_shell(ctx):
         logger.info(f'Exiting.........')
         return 0
     
-    logger.info('----------------------CHECKING FOR CONNECTIONS---------------------')
+    logger.info('\n----------------------CHECKING FOR CONNECTIONS---------------------')
     problem_hosts = checking_connections(ctx.hosts)
     if problem_hosts:
         logger.info('Warning, there are some problematic hosts, start preparing hosts:')
@@ -3245,7 +3245,7 @@ def command_shell(ctx):
     if cmd.lower() != 'y':
         logger.info(f'Exiting.........')
         return 0
-    logger.info('---------------------START EXECUTING BASH FILES--------------------')
+    logger.info('\n---------------------START EXECUTING BASH FILES--------------------')
 
     if cp.has_option('global', 'fsid') and cp.get('global', 'fsid') != ctx.fsid:
         raise Error('fsid does not match ceph.conf')
@@ -6186,9 +6186,9 @@ def generate_ceph_commands(hosts, services):
                 service_spec = f"--port={port}"
                 manage_service(f'rgw', service_name , name, count_per_host, labels, service_spec)
 
-    if 'osds' in services:
+    if 'add-osds' in services:
         print("Adding OSDs.......")
-        osd_services = services['osds']
+        osd_services = services['add-osds']
         with open('osd_spec.yml', 'w') as osd_file:
             for idx, osd_service in enumerate(osd_services):
                 osd_spec = {
@@ -6201,10 +6201,30 @@ def generate_ceph_commands(hosts, services):
                 if idx < len(osd_services) - 1:
                     osd_file.write('---\n')
         if services.get('osd_dry_run'):
-            print("Dry running have been chosen: please wait")
+            print("OSD dry running have been chosen: please wait....")
             os.system(f"ceph orch apply -i osd_spec.yml --dry-run")
         else:
             commands.append(f"ceph orch apply -i osd_spec.yml")
+    
+    if 'remove-osds' in services:
+        print("Removing OSDs......")
+        commands.append('ceph orch pause') 
+        osd_list = services['remove-osds']
+        
+        for osd in osd_list:
+            commands.append(f'ceph orch daemon rm {osd} --force')
+            commands.append(f'ceph osd purge {osd} --yes-i-really-mean-it')
+        
+        for host in hosts:
+            zap_result = subprocess.run(f"ceph orch device ls {host['name']} --format json-pretty", shell=True, capture_output=True, text=True)
+            if zap_result.returncode == 0:
+                zap_res = json.loads(zap_result.stdout)
+                for device in zap_res[0]['devices']:
+                    if not device['osds']:
+                        commands.append(f"ceph orch device zap {host['name']} {device['path']} --force")
+        
+        commands.append(f"ceph orch resume")  
+
     return commands
 #End custom function
 
