@@ -100,9 +100,12 @@ services:
           rotational: 1
           size: '100G'
   remove-osds:
-    - osd.1 
-    - osd.2
-    - osd.4
+    id-lists:
+      - 1 
+      - 2
+      - 4
+    zap-devices: true
+
 
 volume: []
 no_hosts: false
