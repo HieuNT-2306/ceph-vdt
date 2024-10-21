@@ -3237,13 +3237,13 @@ def command_shell(ctx):
         command = ['bash']
 
     # If dry_run is True, print the command and exit
-    if ctx.dry_run:
-        with open(sh_file_path, 'r') as file:
-            script_content = file.read()
-            print(script_content)
-        return 0
-    else:
-        # Execute the bash file directly
+    with open(sh_file_path, 'r') as file:
+        script_content = file.read()
+        print(script_content)
+
+    cmd = input('\nDo you want to execute the bash file above? (y/n):')
+
+    if cmd.lower() == 'y':
         try:
             result = subprocess.run(command, check=True)
             logger.info(f'Script executed with return code {result.returncode}')
@@ -3251,7 +3251,8 @@ def command_shell(ctx):
             raise Error(f'{sh_file_path} not found')
         except subprocess.CalledProcessError as e:
             raise Error(f'Error executing bash script: {e}')
-
+    else: 
+        logger.info(f'Exiting.........')
     return 0
 
 def check_host_ssh_and_ceph_pub(host):
