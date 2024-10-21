@@ -3241,7 +3241,12 @@ def command_shell(ctx):
     else:
         logger.info('All hosts connect, processing to the next steps')
     command_precheck(ctx)
+    cmd = input('\nProceed to continue after checking connections and ports? (y/n):')
+    if cmd.lower() != 'y':
+        logger.info(f'Exiting.........')
+        return 0
     logger.info('---------------------START EXECUTING BASH FILES--------------------')
+
     if cp.has_option('global', 'fsid') and cp.get('global', 'fsid') != ctx.fsid:
         raise Error('fsid does not match ceph.conf')
 
