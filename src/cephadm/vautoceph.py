@@ -3210,6 +3210,20 @@ def command_precheck(ctx):
 def command_shell(ctx):
     # Write context
     cp = read_config(ctx.config)
+    if ctx.command and ctx.command[0].endswith('.sh'):
+        sh_file_path = os.path.abspath(ctx.command[0])
+        if not os.path.isfile(sh_file_path):
+            raise Error(f'{sh_file_path} not found')
+        command = ['bash', sh_file_path]
+    else:
+        command = ['bash']
+
+    cmd = input('\nDo you want to execute the commands above? (y/n):')
+
+    if cmd.lower() != 'y':
+        logger.info(f'Exiting.........')
+        return 0
+    
     logger.info('----------------------CHECKING FOR CONNECTIONS---------------------')
     problem_hosts = checking_connections(ctx.hosts)
     if problem_hosts:
@@ -3227,33 +3241,18 @@ def command_shell(ctx):
         raise Error('fsid does not match ceph.conf')
 
     # Set up the command to execute the .sh file
-    if ctx.command and ctx.command[0].endswith('.sh'):
-        sh_file_path = os.path.abspath(ctx.command[0])
-        if not os.path.isfile(sh_file_path):
-            raise Error(f'{sh_file_path} not found')
-        command = ['bash', sh_file_path]
-    else:
-        # Default to interactive bash if no command provided
-        command = ['bash']
 
     # If dry_run is True, print the command and exit
     with open(sh_file_path, 'r') as file:
         script_content = file.read()
         print(script_content)
-
-    cmd = input('\nDo you want to execute the bash file above? (y/n):')
-
-    if cmd.lower() == 'y':
-        try:
-            result = subprocess.run(command, check=True)
-            logger.info(f'Script executed with return code {result.returncode}')
-        except FileNotFoundError:
-            raise Error(f'{sh_file_path} not found')
-        except subprocess.CalledProcessError as e:
-            raise Error(f'Error executing bash script: {e}')
-    else: 
-        logger.info(f'Exiting.........')
-    return 0
+    try:
+        result = subprocess.run(command, check=True)
+        logger.info(f'Script executed with return code {result.returncode}')
+    except FileNotFoundError:
+        raise Error(f'{sh_file_path} not found')
+    except subprocess.CalledProcessError as e:
+        raise Error(f'Error executing bash script: {e}')
 
 def check_host_ssh_and_ceph_pub(host):
     #Check SSH connection and if /etc/ceph/ceph.pub exists on the host
