@@ -6211,7 +6211,7 @@ def generate_ceph_commands(hosts, services):
         commands.append('ceph orch pause') 
         osd_list = set(services['remove-osds'].get('id-lists', []))
         zap_devices = services['remove-osds'].get('zap_devices', False)
-
+        print(osd_list)
         for osd in osd_list:
             commands.append(f'ceph orch daemon rm osd.{osd} --force')
             commands.append(f'ceph osd purge osd.{osd} --yes-i-really-mean-it')
@@ -6221,7 +6221,8 @@ def generate_ceph_commands(hosts, services):
                 if zap_result.returncode == 0:
                     zap_res = json.loads(zap_result.stdout)
                     for device in zap_res[0]['devices']:
-                        device_osds = {lv['osd_id'] for lv in device.get('lvs', [])}
+                        device_osds = {int(lv['osd_id'] for lv in device.get('lvs', []))}
+                        print(device_osds)
                         if device_osds.issubset(osd_list):
                             commands.append(f"ceph orch device zap {host['name']} {device['path']} --force")
         
