@@ -3217,7 +3217,10 @@ def command_shell(ctx):
         command = ['bash', sh_file_path]
     else:
         command = ['bash']
-
+        
+    with open(sh_file_path, 'r') as file:
+        script_content = file.read()
+        print(script_content)
     cmd = input('\nDo you want to execute the commands above? (y/n):')
 
     if cmd.lower() != 'y':
@@ -3243,9 +3246,6 @@ def command_shell(ctx):
     # Set up the command to execute the .sh file
 
     # If dry_run is True, print the command and exit
-    with open(sh_file_path, 'r') as file:
-        script_content = file.read()
-        print(script_content)
     try:
         result = subprocess.run(command, check=True)
         logger.info(f'Script executed with return code {result.returncode}')
