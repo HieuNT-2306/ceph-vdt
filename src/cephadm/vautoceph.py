@@ -6220,6 +6220,8 @@ def generate_ceph_commands(hosts, services):
                 if zap_result.returncode == 0:
                     zap_res = json.loads(zap_result.stdout)
                     for device in zap_res[0]['devices']:
+                        if device['path'].startswith('/dev/nbd'):
+                            continue
                         device_osds = {int(lv['osd_id']) for lv in device.get('lvs', [])}
                         if device_osds.issubset(osd_list):
                             commands.append(f"ceph orch device zap {host['name']} {device['path']} --force")
