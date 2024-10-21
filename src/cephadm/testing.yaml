@@ -101,9 +101,9 @@ services:
           size: '100G'
   remove-osds:
     id-lists:
-      - 1 
       - 2
-      - 4
+      - 5
+      - 8
     zap-devices: true
 
 
