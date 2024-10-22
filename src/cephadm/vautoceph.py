@@ -6216,7 +6216,7 @@ def generate_ceph_commands(hosts, services):
         labels = host['label'].split(',')
         current_labels = get_labels_for_hostname(name, current_labels_list)
         print(f'Processing host {name} with labels {labels}...')
-        commands.append(f"#MANAGING HOST: {name}")
+        commands.append(f"\n#MANAGING HOST: {name}\n")
         commands.append(f"ceph orch host add {name} {ip} --labels={','.join(labels)}")
         update_labels(name, current_labels, ','.join(labels))
 

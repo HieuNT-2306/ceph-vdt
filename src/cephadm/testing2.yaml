@@ -1,4 +1,5 @@
 hosts:
+ 
 - name: ceph-node-1
   ipaddresses: 171.254.95.193
   label: osd
@@ -6,21 +7,20 @@ hosts:
 
 - name: ceph-node-2
   ipaddresses: 171.254.95.156
-  label: _admin,mgr,mon,osd
+  label: _admin,mgr,mon,osd,rgw
   ssh-user: root
 
 - name: ceph-node-3
   ipaddresses: 171.254.93.217
-  label: osd
+  label: osd,mgr
   ssh-user: root
-
-dry_run: False
 services:
-  rm-monitor:
-    hostnames:
-      - ceph-node-1
-      - ceph-node-3
-  rm-manager:
-    hostnames:
-      - ceph-node-1
-      - ceph-node-3
+  monitor:
+    count-per-host: 1
+  manager:
+    count-per-host: 1
+  radosgw: 
+    service_list:
+      - name: public
+        port: 8888
+        count-per-host: 1
