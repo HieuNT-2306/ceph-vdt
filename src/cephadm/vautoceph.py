@@ -6219,30 +6219,31 @@ def generate_ceph_commands(hosts, services):
         commands.append(f"ceph orch host add {name} {ip} --labels={','.join(labels)}")
         update_labels(name, current_labels, ','.join(labels))
 
-    if 'monitor' in services:  
-        commands.append("\n#MANAGING MONITORS:\n")
-        count_per_host = services['monitor'].get('count-per-host', 1)
-        manage_service('mon','', name, count_per_host, labels)
-    else:
-        manage_service('mon','', name, 1, labels)
-    if 'manager' in services:  
-        commands.append("\n#MANAGING MANAGERS:\n")
-        count_per_host = services['manager'].get('count-per-host', 1)
-        manage_service('mgr','', name, count_per_host, labels)
-    else:
-        manage_service('mgr','', name, 1, labels)
-
+        if 'monitor' in services:  
+            commands.append("\n#MANAGING MONITORS:\n")
+            count_per_host = services['monitor'].get('count-per-host', 1)
+            manage_service('mon','', name, count_per_host, labels)
+        else:
+            manage_service('mon','', name, 1, labels)
+        if 'manager' in services:  
+            commands.append("\n#MANAGING MANAGERS:\n")
+            count_per_host = services['manager'].get('count-per-host', 1)
+            manage_service('mgr','', name, count_per_host, labels)
+        else:
+            manage_service('mgr','', name, 1, labels)
+        if 'radosgw' in services:  
+            rgw = services['radosgw']
+            commands.append("\n#MANAGING RADOSGW:\n")
+            for rgw_service in rgw['service_list']:
+                service_name = rgw_service.get('name', '')
+                port = rgw_service.get('port', 8080)
+                count_per_host = rgw_service.get('count-per-host', 1)
+                service_spec = f"--port={port}"
+                manage_service('rgw', service_name , name, count_per_host, labels, service_spec)
 
 
     if 'radosgw' in services:  
         rgw = services['radosgw']
-        commands.append("\n#MANAGING RADOSGW:\n")
-        for rgw_service in rgw['service_list']:
-            service_name = rgw_service.get('name', '')
-            port = rgw_service.get('port', 8080)
-            count_per_host = rgw_service.get('count-per-host', 1)
-            service_spec = f"--port={port}"
-            manage_service('rgw', service_name , name, count_per_host, labels, service_spec)
         if 'user' in rgw:
             for user in rgw['user']:
                 create_user_and_store_keys(user)
