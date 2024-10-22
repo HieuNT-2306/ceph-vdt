@@ -26,3 +26,4 @@ services:
         realm: test
     realm:
       - name: test
+        default: true
