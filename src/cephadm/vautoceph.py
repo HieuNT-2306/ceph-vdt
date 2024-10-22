@@ -6110,6 +6110,7 @@ def generate_ceph_commands(hosts, services):
     removed_hosts = [ch['hostname'] for ch in current_hosts if ch['hostname'] not in new_host_names]
     for removed_host in removed_hosts:  
         print(f"Cleaning up and removing host: {removed_host}")
+        commands.append("\n#REMOVING HOSTS:\n")
         commands.append("ceph orch pause")
         for osd_service in current_services:
             if osd_service['hostname'] == removed_host and osd_service['daemon_type'] == 'osd':
@@ -6218,11 +6219,13 @@ def generate_ceph_commands(hosts, services):
         commands.append(f"ceph orch host add {name} {ip} --labels={','.join(labels)}")
         update_labels(name, current_labels, ','.join(labels))
         if 'monitor' in services:  
+            commands.append("\n#MANAGING MONITORS:\n")
             count_per_host = services['monitor'].get('count-per-host', 1)
             manage_service('mon','', name, count_per_host, labels)
         else:
             manage_service('mon','', name, 1, labels)
         if 'manager' in services:  
+            commands.append("\n#MANAGING MANAGERS:\n")
             count_per_host = services['manager'].get('count-per-host', 1)
             manage_service('mgr','', name, count_per_host, labels)
         else:
@@ -6245,6 +6248,7 @@ def generate_ceph_commands(hosts, services):
         if 'realm' in rgw:
             realms = rgw['realm']
             for rlm in realms:
+                commands.append("\n#ADDING REALMS:\n")
                 if rlm.get('default', True):
                     commands.append(f"radosgw-admin realm create --rgw-realm={rlm['name']} --default")
                 else: 
@@ -6252,6 +6256,7 @@ def generate_ceph_commands(hosts, services):
         if 'zonegroup' in rgw:
             zonegroups = rgw['zonegroup']
             for zg in zonegroups:
+                commands.append("\n#ADDING ZONEGROUPS:\n")
                 zonegroup_name = zg.get('name')
                 realm_name = zg.get('realm')
                 if zg.get('default', True):
@@ -6262,6 +6267,7 @@ def generate_ceph_commands(hosts, services):
                     print(f"Creating new zonegroup: {zonegroup_name}")
                     commands.append(f"radosgw-admin zonegroup create --rgw-zonegroup={zonegroup_name} --endpoints={zg['endpoint']} --rgw-realm={realm_name}")
         if 'zone' in rgw:
+            commands.append("\n#ADDING ZONES:\n")
             zones = rgw['zone']
             for zone in zones:
                 access_key, secret_key = get_user_keys(zone['uid'])
@@ -6302,6 +6308,7 @@ def generate_ceph_commands(hosts, services):
             
 
     if 'add-osds' in services:
+        commands.append("\n#ADDING OSDS:\n")
         print("Adding OSDs.......")
         osd_services = services['add-osds']
         with open('osd_spec.yml', 'w') as osd_file:
@@ -6323,7 +6330,7 @@ def generate_ceph_commands(hosts, services):
     
     if 'remove-osds' in services:
         print("Removing OSDs......")
-        commands.append("#REMOVING OSDS:\n\n")
+        commands.append("\n#REMOVING OSDS:\n")
         commands.append('ceph orch pause') 
         osd_list = set(services['remove-osds'].get('id-lists', []))
         zap_devices = services['remove-osds'].get('zap_devices', False)
