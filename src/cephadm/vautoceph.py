@@ -6282,7 +6282,7 @@ def generate_ceph_commands(hosts, services):
                         create_pool(data_extra_pool, 16, commands)
                     if zone.get('default', False):
                         print(f"Renaming default zone to: {zone_name}")
-                        commands.append(f"radosgw-admin zone modify --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key}")
+                        commands.append(f"radosgw-admin zone modify --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key} --master --default")
                     else:
                         print(f"Creating new zone: {zone_name}")
                         commands.append(f"radosgw-admin zone create --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key}")
