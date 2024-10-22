@@ -6250,11 +6250,11 @@ def generate_ceph_commands(hosts, services):
                     zonegroup_name = zg.get('name')
                     realm_name = zg.get('realm')
                     if zg.get('default', True):
-                        print(f"Renaming default zonegroup to: {zone_name}")
+                        print(f"Renaming default zonegroup to: {zonegroup_name}")
                         commands.append(f'radosgw-admin zonegroup rename --rgw-zonegroup default --zonegroup-new-name={zonegroup_name}')
                         commands.append(f'radosgw-admin zonegroup modify --rgw-realm={realm_name} --rgw-zonegroup{zonegroup_name}= --master --default')
                     else: 
-                        print(f"Creating new zonegroup: {zone_name}")
+                        print(f"Creating new zonegroup: {zonegroup_name}")
                         commands.append(f"radosgw-admin zonegroup create --rgw-zonegroup={zonegroup_name} --endpoints={zg['endpoint']} --rgw-realm={realm_name}")
             if 'zone' in rgw:
                 zones = rgw['zone']
