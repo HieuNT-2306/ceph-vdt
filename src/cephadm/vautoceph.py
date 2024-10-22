@@ -6164,9 +6164,13 @@ def generate_ceph_commands(hosts, services):
         display_name = user.get('display_name', uid)
         
         # Create the RGW user
-        user_result = subprocess.run(f"radosgw-admin user create --uid={uid} --display-name={display_name} --system", 
-                                     shell=True, capture_output=True, text=True)
-        user_data = json.loads(user_result.stdout)
+        try: 
+            user_result = subprocess.run(f"radosgw-admin user create --uid={uid} --display-name={display_name} --system", 
+                                        shell=True, capture_output=True, text=True)
+            user_data = json.loads(user_result.stdout)
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed: {e.stderr}")
+            return None
         access_key = user_data['keys'][0]['access_key']
         secret_key = user_data['keys'][0]['secret_key']
         
