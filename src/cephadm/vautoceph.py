@@ -6269,25 +6269,35 @@ def generate_ceph_commands(hosts, services):
                 if not access_key or not secret_key:
                     print(f"Error: Missing access_key or secret_key for {zone['uid']}")
                     continue
+
+                if zone.get('default', False):
+                    print(f"Renaming default zone to: {zone_name}")
+                    commands.append(f"radosgw-admin zone modify --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key} --master --default")
+                else:
+                    print(f"Creating new zone: {zone_name}")
+                    commands.append(f"radosgw-admin zone create --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key}")
+                
                 storage_classes = zone.get('storage_classes', {})
+
                 for sc_name, sc_data in storage_classes.items():
                     data_pool = sc_data.get('data_pool', '')
+                    storage_class = sc_data.get('storage_class', '')
                     index_pool = sc_data.get('index_pool', '')
                     data_extra_pool = sc_data.get('data_extra_pool', '')
-
-                    create_pool(data_pool, 16, commands)
+                    commands.append(f"radosgw-admin zonegroup placement add --rgw-zonegroup {zonegroup_name} --placement-id {sc_name} --storage-class {storage_class}")
+                    cmd = f"radosgw-admin zone placement add --rgw-zone {zone_name}  --placement-id {sc_name} --storage-class {storage_class}"
+                    if data_pool:
+                        create_pool(data_pool, 16, commands)
+                        cmd += f" --data-pool={data_pool}"
                     if index_pool:
                         create_pool(index_pool, 16, commands)
+                        cmd += f" --index-pool={index_pool}"
                     if data_extra_pool:
                         create_pool(data_extra_pool, 16, commands)
-                    if zone.get('default', False):
-                        print(f"Renaming default zone to: {zone_name}")
-                        commands.append(f"radosgw-admin zone modify --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key} --master --default")
-                    else:
-                        print(f"Creating new zone: {zone_name}")
-                        commands.append(f"radosgw-admin zone create --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key}")
+                        cmd += f" --data-extra-pool={data_extra_pool}"
+                    commands.append(cmd)
 
-
+                    
             
             
 
