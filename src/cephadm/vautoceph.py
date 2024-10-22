@@ -6222,70 +6222,70 @@ def generate_ceph_commands(hosts, services):
             manage_service('mon','', name, count_per_host, labels)
         else:
             manage_service('mon','', name, 1, labels)
-        
-
         if 'manager' in services:  
             count_per_host = services['manager'].get('count-per-host', 1)
             manage_service('mgr','', name, count_per_host, labels)
         else:
             manage_service('mgr','', name, 1, labels)
 
-        if 'radosgw' in services:  
-            rgw = services['radosgw']
-            for rgw_service in rgw['service_list']:
-                service_name = rgw_service.get('name', '')
-                port = rgw_service.get('port', 8080)
-                count_per_host = rgw_service.get('count-per-host', 1)
-                service_spec = f"--port={port}"
-                manage_service('rgw', service_name , name, count_per_host, labels, service_spec)
-            if 'user' in rgw:
-                for user in rgw['user']:
-                    create_user_and_store_keys(user)
 
-            if 'realm' in rgw:
-                realms = rgw['realm']
-                for rlm in realms:
-                    if rlm.get('default', True):
-                        commands.append(f"radosgw-admin realm create --rgw-realm={rlm['name']} --default")
-                    else: 
-                        commands.append(f"radosgw-admin realm create --rgw-realm={rlm['name']}")
-            if 'zonegroup' in rgw:
-                zonegroups = rgw['zonegroup']
-                for zg in zonegroups:
-                    zonegroup_name = zg.get('name')
-                    realm_name = zg.get('realm')
-                    if zg.get('default', True):
-                        print(f"Renaming default zonegroup to: {zonegroup_name}")
-                        commands.append(f'radosgw-admin zonegroup rename --rgw-zonegroup default --zonegroup-new-name={zonegroup_name}')
-                        commands.append(f'radosgw-admin zonegroup modify --rgw-realm={realm_name} --rgw-zonegroup{zonegroup_name}= --master --default')
-                    else: 
-                        print(f"Creating new zonegroup: {zonegroup_name}")
-                        commands.append(f"radosgw-admin zonegroup create --rgw-zonegroup={zonegroup_name} --endpoints={zg['endpoint']} --rgw-realm={realm_name}")
-            if 'zone' in rgw:
-                zones = rgw['zone']
-                for zone in zones:
-                    access_key, secret_key = get_user_keys(zone['uid'])
-                    zone_name = zone.get('name', '')
-                    if not access_key or not secret_key:
-                        print(f"Error: Missing access_key or secret_key for {zone['uid']}")
-                        continue
-                    storage_classes = zone.get('storage_classes', {})
-                    for sc_name, sc_data in storage_classes.items():
-                        data_pool = sc_data.get('data_pool', '')
-                        index_pool = sc_data.get('index_pool', '')
-                        data_extra_pool = sc_data.get('data_extra_pool', '')
 
-                        create_pool(data_pool, 16, commands)
-                        if index_pool:
-                            create_pool(index_pool, 16, commands)
-                        if data_extra_pool:
-                            create_pool(data_extra_pool, 16, commands)
-                        if zone.get('default', False):
-                            print(f"Renaming default zone to: {zone_name}")
-                            commands.append(f"radosgw-admin zone modify --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key}")
-                        else:
-                            print(f"Creating new zone: {zone_name}")
-                            commands.append(f"radosgw-admin zone create --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key}")
+    if 'radosgw' in services:  
+        rgw = services['radosgw']
+        for rgw_service in rgw['service_list']:
+            service_name = rgw_service.get('name', '')
+            port = rgw_service.get('port', 8080)
+            count_per_host = rgw_service.get('count-per-host', 1)
+            service_spec = f"--port={port}"
+            manage_service('rgw', service_name , name, count_per_host, labels, service_spec)
+        if 'user' in rgw:
+            for user in rgw['user']:
+                create_user_and_store_keys(user)
+
+        if 'realm' in rgw:
+            realms = rgw['realm']
+            for rlm in realms:
+                if rlm.get('default', True):
+                    commands.append(f"radosgw-admin realm create --rgw-realm={rlm['name']} --default")
+                else: 
+                    commands.append(f"radosgw-admin realm create --rgw-realm={rlm['name']}")
+        if 'zonegroup' in rgw:
+            zonegroups = rgw['zonegroup']
+            for zg in zonegroups:
+                zonegroup_name = zg.get('name')
+                realm_name = zg.get('realm')
+                if zg.get('default', True):
+                    print(f"Renaming default zonegroup to: {zonegroup_name}")
+                    commands.append(f'radosgw-admin zonegroup rename --rgw-zonegroup default --zonegroup-new-name={zonegroup_name}')
+                    commands.append(f'radosgw-admin zonegroup modify --rgw-realm={realm_name} --rgw-zonegroup{zonegroup_name}= --master --default')
+                else: 
+                    print(f"Creating new zonegroup: {zonegroup_name}")
+                    commands.append(f"radosgw-admin zonegroup create --rgw-zonegroup={zonegroup_name} --endpoints={zg['endpoint']} --rgw-realm={realm_name}")
+        if 'zone' in rgw:
+            zones = rgw['zone']
+            for zone in zones:
+                access_key, secret_key = get_user_keys(zone['uid'])
+                zone_name = zone.get('name', '')
+                if not access_key or not secret_key:
+                    print(f"Error: Missing access_key or secret_key for {zone['uid']}")
+                    continue
+                storage_classes = zone.get('storage_classes', {})
+                for sc_name, sc_data in storage_classes.items():
+                    data_pool = sc_data.get('data_pool', '')
+                    index_pool = sc_data.get('index_pool', '')
+                    data_extra_pool = sc_data.get('data_extra_pool', '')
+
+                    create_pool(data_pool, 16, commands)
+                    if index_pool:
+                        create_pool(index_pool, 16, commands)
+                    if data_extra_pool:
+                        create_pool(data_extra_pool, 16, commands)
+                    if zone.get('default', False):
+                        print(f"Renaming default zone to: {zone_name}")
+                        commands.append(f"radosgw-admin zone modify --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key}")
+                    else:
+                        print(f"Creating new zone: {zone_name}")
+                        commands.append(f"radosgw-admin zone create --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key}")
 
 
             
