@@ -6085,7 +6085,7 @@ def generate_ceph_commands(hosts, services):
 
     def find_service_name(service_type, hostname):
         for service in current_services:
-            if service['daemon_type'] == service_type and service['hostname'] == hostname:
+            if service['service_name'] == service_type and service['hostname'] == hostname:
                 return service['daemon_name']
         return None
     
@@ -6184,7 +6184,7 @@ def generate_ceph_commands(hosts, services):
                 port = rgw_service.get('port', 8080)
                 count_per_host = rgw_service.get('count-per-host', 1)
                 service_spec = f"--port={port}"
-                manage_service(f'rgw', service_name , name, count_per_host, labels, service_spec)
+                manage_service('rgw', service_name , name, count_per_host, labels, service_spec)
 
     if 'add-osds' in services:
         print("Adding OSDs.......")
