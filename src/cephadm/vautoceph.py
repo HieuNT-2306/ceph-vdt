@@ -6218,18 +6218,19 @@ def generate_ceph_commands(hosts, services):
         print(f'Processing host {name} with labels {labels}...')
         commands.append(f"ceph orch host add {name} {ip} --labels={','.join(labels)}")
         update_labels(name, current_labels, ','.join(labels))
-        if 'monitor' in services:  
-            commands.append("\n#MANAGING MONITORS:\n")
-            count_per_host = services['monitor'].get('count-per-host', 1)
-            manage_service('mon','', name, count_per_host, labels)
-        else:
-            manage_service('mon','', name, 1, labels)
-        if 'manager' in services:  
-            commands.append("\n#MANAGING MANAGERS:\n")
-            count_per_host = services['manager'].get('count-per-host', 1)
-            manage_service('mgr','', name, count_per_host, labels)
-        else:
-            manage_service('mgr','', name, 1, labels)
+        
+    if 'monitor' in services:  
+        commands.append("\n#MANAGING MONITORS:\n")
+        count_per_host = services['monitor'].get('count-per-host', 1)
+        manage_service('mon','', name, count_per_host, labels)
+    else:
+        manage_service('mon','', name, 1, labels)
+    if 'manager' in services:  
+        commands.append("\n#MANAGING MANAGERS:\n")
+        count_per_host = services['manager'].get('count-per-host', 1)
+        manage_service('mgr','', name, count_per_host, labels)
+    else:
+        manage_service('mgr','', name, 1, labels)
 
 
 
