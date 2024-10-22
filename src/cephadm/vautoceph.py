@@ -6270,7 +6270,7 @@ def generate_ceph_commands(hosts, services):
                         print(f"Error: Missing access_key or secret_key for {zone['uid']}")
                         continue
                     storage_classes = zone.get('storage_classes', {})
-                    for sc_data in storage_classes.items():
+                    for sc_name, sc_data in storage_classes.items():
                         data_pool = sc_data.get('data_pool', '')
                         index_pool = sc_data.get('index_pool', '')
                         data_extra_pool = sc_data.get('data_extra_pool', '')
