@@ -6235,7 +6235,8 @@ def generate_ceph_commands(hosts, services):
                 service_spec = f"--port={port}"
                 manage_service('rgw', service_name , name, count_per_host, labels, service_spec)
             if 'user' in rgw:
-                create_user_and_store_keys(rgw['user'])
+                for user in rgw['user']:
+                    create_user_and_store_keys(user)
 
             if 'realm' in rgw:
                 realms = rgw['realm']
@@ -6270,12 +6271,11 @@ def generate_ceph_commands(hosts, services):
                         index_pool = sc_data.get('index_pool', '')
                         data_extra_pool = sc_data.get('data_extra_pool', '')
 
-                        # Create pools if they don't exist
-                        create_pool(data_pool)
+                        create_pool(data_pool, 16, commands)
                         if index_pool:
-                            create_pool(index_pool)
+                            create_pool(index_pool, 16, commands)
                         if data_extra_pool:
-                            create_pool(data_extra_pool)
+                            create_pool(data_extra_pool, 16, commands)
                         if zone.get('default', False):
                             print(f"Renaming default zone to: {zone_name}")
                             commands.append(f"radosgw-admin zone modify --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key}")
