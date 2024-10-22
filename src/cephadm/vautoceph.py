@@ -6241,9 +6241,9 @@ def generate_ceph_commands(hosts, services):
                 realms = rgw['realm']
                 for rlm in realms:
                     if rlm.get('default', True):
-                        commands.append(f'radosgw-admin realm create --rgw-realm={rlm['name']} --default')
+                        commands.append(f"radosgw-admin realm create --rgw-realm={rlm['name']} --default")
                     else: 
-                        commands.append(f'radosgw-admin realm create --rgw-realm={rlm['name']}')
+                        commands.append(f"radosgw-admin realm create --rgw-realm={rlm['name']}")
             if 'zonegroup' in rgw:
                 zonegroups = rgw['zonegroup']
                 for zg in zonegroups:
@@ -6255,7 +6255,7 @@ def generate_ceph_commands(hosts, services):
                         commands.append(f'radosgw-admin zonegroup modify --rgw-realm={realm_name} --rgw-zonegroup{zonegroup_name}= --master --default')
                     else: 
                         print(f"Creating new zonegroup: {zone_name}")
-                        commands.append(f'radosgw-admin zonegroup create --rgw-zonegroup={zonegroup_name} --endpoints={zg['endpoint']} --rgw-realm={realm_name}')
+                        commands.append(f"radosgw-admin zonegroup create --rgw-zonegroup={zonegroup_name} --endpoints={zg['endpoint']} --rgw-realm={realm_name}")
             if 'zone' in rgw:
                 zones = rgw['zone']
                 for zone in zones:
@@ -6283,7 +6283,7 @@ def generate_ceph_commands(hosts, services):
                             print(f"Creating new zone: {zone_name}")
                             commands.append(f"radosgw-admin zone create --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key}")
 
-                        
+
             
             
 
