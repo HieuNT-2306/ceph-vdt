@@ -6152,10 +6152,58 @@ def generate_ceph_commands(hosts, services):
                 print(f"Removing label {label} from host {hostname}...")
                 commands.append(f"ceph orch host label rm {hostname} {label}")
     current_labels_list = []
+
+    
     if os.path.exists('/etc/ceph/ceph.conf'):
         current_labels_cmd = f"ceph orch host ls --format json-pretty"
         current_labels_result = subprocess.run(current_labels_cmd, shell=True, capture_output=True, text=True)           
         current_labels_list = json.loads(current_labels_result.stdout)
+
+    def create_user_and_store_keys(user):
+        uid = user['uid']
+        display_name = user.get('display_name', uid)
+        
+        # Create the RGW user
+        user_result = subprocess.run(f"radosgw-admin user create --uid={uid} --display-name={display_name} --system", 
+                                     shell=True, capture_output=True, text=True)
+        user_data = json.loads(user_result.stdout)
+        access_key = user_data['keys'][0]['access_key']
+        secret_key = user_data['keys'][0]['secret_key']
+        
+        # Store the keys in files
+        with open(f"{uid}_ACCESS_KEY", "w") as ak_file:
+            ak_file.write(access_key)
+        with open(f"{uid}_SECRET_KEY", "w") as sk_file:
+            sk_file.write(secret_key)
+        
+        return access_key, secret_key
+        
+    def pool_exists(pool_name):
+        try:
+            result  = subprocess.run("ceph osd lspools", shell=True, check=True, capture_output=True, text=True)
+            pools = result.stdout
+        except subprocess.CalledProcessError as e:
+            print(f"Command failed: {e.stderr}")
+            return None
+        
+        return pool_name in pools if pools else False
+    
+    def create_pool(pool_name, pg_num, commands):
+        if not pool_exists(pool_name):
+            print(f"Creating pool: {pool_name}")
+            commands.append(f"ceph osd pool create {pool_name} {pg_num} {pg_num}")
+
+    def get_user_keys(uid):
+        """Retrieve access and secret keys from files."""
+        try:
+            with open(f"{uid}_ACCESS_KEY", 'r') as access_file:
+                access_key = access_file.read().strip()
+            with open(f"{uid}_SECRET_KEY", 'r') as secret_file:
+                secret_key = secret_file.read().strip()
+            return access_key, secret_key
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+            return None, None
 
     for host in hosts:
         name = host['name']
@@ -6170,7 +6218,7 @@ def generate_ceph_commands(hosts, services):
             manage_service('mon','', name, count_per_host, labels)
         else:
             manage_service('mon','', name, 1, labels)
-
+        
 
         if 'manager' in services:  
             count_per_host = services['manager'].get('count-per-host', 1)
@@ -6179,12 +6227,65 @@ def generate_ceph_commands(hosts, services):
             manage_service('mgr','', name, 1, labels)
 
         if 'radosgw' in services:  
-            for rgw_service in services['radosgw']:
+            rgw = services['radosgw']
+            for rgw_service in rgw['service_list']:
                 service_name = rgw_service.get('name', '')
                 port = rgw_service.get('port', 8080)
                 count_per_host = rgw_service.get('count-per-host', 1)
                 service_spec = f"--port={port}"
                 manage_service('rgw', service_name , name, count_per_host, labels, service_spec)
+            if 'user' in rgw:
+                create_user_and_store_keys(rgw['user'])
+
+            if 'realm' in rgw:
+                realms = rgw['realm']
+                for rlm in realms:
+                    if rlm.get('default', True):
+                        commands.append(f'radosgw-admin realm create --rgw-realm={rlm['name']} --default')
+                    else: 
+                        commands.append(f'radosgw-admin realm create --rgw-realm={rlm['name']}')
+            if 'zonegroup' in rgw:
+                zonegroups = rgw['zonegroup']
+                for zg in zonegroups:
+                    zonegroup_name = zg.get('name')
+                    realm_name = zg.get('realm')
+                    if zg.get('default', True):
+                        print(f"Renaming default zonegroup to: {zone_name}")
+                        commands.append(f'radosgw-admin zonegroup rename --rgw-zonegroup default --zonegroup-new-name={zonegroup_name}')
+                        commands.append(f'radosgw-admin zonegroup modify --rgw-realm={realm_name} --rgw-zonegroup{zonegroup_name}= --master --default')
+                    else: 
+                        print(f"Creating new zonegroup: {zone_name}")
+                        commands.append(f'radosgw-admin zonegroup create --rgw-zonegroup={zonegroup_name} --endpoints={zg['endpoint']} --rgw-realm={realm_name}')
+            if 'zone' in rgw:
+                zones = rgw['zone']
+                for zone in zones:
+                    access_key, secret_key = get_user_keys(zone['uid'])
+                    zone_name = zone.get('name', '')
+                    if not access_key or not secret_key:
+                        print(f"Error: Missing access_key or secret_key for {zone['uid']}")
+                        continue
+                    storage_classes = zone.get('storage_classes', {})
+                    for sc_data in storage_classes.items():
+                        data_pool = sc_data.get('data_pool', '')
+                        index_pool = sc_data.get('index_pool', '')
+                        data_extra_pool = sc_data.get('data_extra_pool', '')
+
+                        # Create pools if they don't exist
+                        create_pool(data_pool)
+                        if index_pool:
+                            create_pool(index_pool)
+                        if data_extra_pool:
+                            create_pool(data_extra_pool)
+                        if zone.get('default', False):
+                            print(f"Renaming default zone to: {zone_name}")
+                            commands.append(f"radosgw-admin zone modify --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key}")
+                        else:
+                            print(f"Creating new zone: {zone_name}")
+                            commands.append(f"radosgw-admin zone create --rgw-zone={zone_name} --rgw-zonegroup={zonegroup_name} --access-key={access_key} --secret={secret_key}")
+
+                        
+            
+            
 
     if 'add-osds' in services:
         print("Adding OSDs.......")

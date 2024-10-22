@@ -1,5 +1,3 @@
-#!/bin/bash
-
 ceph orch apply mon --unmanaged
 ceph orch apply mgr --unmanaged
 ceph orch host add ceph-node-1 171.254.95.193 --labels=osd

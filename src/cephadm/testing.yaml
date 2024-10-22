@@ -82,9 +82,16 @@ services:
   manager:
     count-per-host: 1
   radosgw:
-    - name: public
-      port: 8888
-      count-per-host: 1
+    service_list:
+      - name: public
+        port: 8888
+        count-per-host: 1
+    user:
+      
+    zone:
+
+    zonegroup:
+    
   osd_dry_run: true
   add-osds:
     - service-id: osd_spec_hdd
