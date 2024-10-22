@@ -6218,7 +6218,7 @@ def generate_ceph_commands(hosts, services):
         print(f'Processing host {name} with labels {labels}...')
         commands.append(f"ceph orch host add {name} {ip} --labels={','.join(labels)}")
         update_labels(name, current_labels, ','.join(labels))
-        
+
     if 'monitor' in services:  
         commands.append("\n#MANAGING MONITORS:\n")
         count_per_host = services['monitor'].get('count-per-host', 1)
@@ -6236,6 +6236,7 @@ def generate_ceph_commands(hosts, services):
 
     if 'radosgw' in services:  
         rgw = services['radosgw']
+        commands.append("\n#MANAGING RADOSGW:\n")
         for rgw_service in rgw['service_list']:
             service_name = rgw_service.get('name', '')
             port = rgw_service.get('port', 8080)
