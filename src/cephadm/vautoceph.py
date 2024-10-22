@@ -6323,6 +6323,7 @@ def generate_ceph_commands(hosts, services):
     
     if 'remove-osds' in services:
         print("Removing OSDs......")
+        commands.append("#REMOVING OSDS:\n\n")
         commands.append('ceph orch pause') 
         osd_list = set(services['remove-osds'].get('id-lists', []))
         zap_devices = services['remove-osds'].get('zap_devices', False)
