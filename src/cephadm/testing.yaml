@@ -97,7 +97,9 @@ services:
         storage_classes:
           default-placement: 
             storage_class: SLIVER
-            data_pool: default.rgw.sliver.data
+            data_pool: 
+              name: default.rgw.sliver.data
+              pg_num: 16
           hdd-placement:
             storage_class: STANDARD
             data_pool: 
