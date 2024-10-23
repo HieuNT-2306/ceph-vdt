@@ -100,9 +100,15 @@ services:
             data_pool: default.rgw.sliver.data
           hdd-placement:
             storage_class: STANDARD
-            data_pool: default.rgw.sliver.data
-            index_pool: default.rgw.buckets.hddplacement.index
-            data_extra_pool: default.rgw.buckets.hddplacement.non-ec
+            data_pool: 
+              name: default.rgw.sliver.data
+              pg_num: 16
+            index_pool: 
+              name: default.rgw.buckets.hddplacement.index
+              pg_num: 16
+            data_extra_pool: 
+              name: default.rgw.buckets.hddplacement.index
+              pg_num: 16
     zonegroup:
       - name: vn-central-1-test
         default: true

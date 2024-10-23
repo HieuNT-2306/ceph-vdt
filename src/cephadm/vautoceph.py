@@ -5791,7 +5791,7 @@ def prechecking_yaml(yaml_data):
                 if "placement" not in osd or osd["placement"] is None:
                     errors.append('- Each entry in "add-osds" must have a non-empty "placement" field.')
                 elif "hosts" not in osd["placement"] or osd["placement"]["hosts"] is None:
-                    errors.append(f'- "Host" in {osd.get("service-id", "unknown")} must not be an empty array! .')
+                    errors.append(f'- "Host" in {osd.get("service-id", "unknown")} must not be an empty array.')
                 if "spec" not in osd or osd["spec"] is None:
                     errors.append('- Each entry in "add-osds" must have a "spec" field.')
                 else:
@@ -6384,14 +6384,14 @@ def generate_ceph_commands(hosts, services):
                     commands.append(f"radosgw-admin zonegroup placement add --rgw-zonegroup {zonegroup_name} --placement-id {sc_name} --storage-class {storage_class}")
                     cmd = f"radosgw-admin zone placement add --rgw-zone {zone_name}  --placement-id {sc_name} --storage-class {storage_class}"
                     if data_pool:
-                        create_pool(data_pool, 16, commands)
-                        cmd += f" --data-pool={data_pool}"
+                        create_pool(data_pool['name'], data_pool['pg_num'], commands)
+                        cmd += f" --data-pool={data_pool['name']}"
                     if index_pool:
-                        create_pool(index_pool, 16, commands)
-                        cmd += f" --index-pool={index_pool}"
+                        create_pool(index_pool['name'], index_pool['pg_num'], commands)
+                        cmd += f" --index-pool={index_pool['name']}"
                     if data_extra_pool:
-                        create_pool(data_extra_pool, 16, commands)
-                        cmd += f" --data-extra-pool={data_extra_pool}"
+                        create_pool(data_extra_pool['name'], data_extra_pool['pg_num'], commands)
+                        cmd += f" --data-extra-pool={data_extra_pool['name']}"
                     commands.append(cmd)
 
                     
