@@ -5725,10 +5725,100 @@ def get_fsid_from_conf(conf_file='/etc/ceph/ceph.conf'):
         return None
 
 
-#Function to translate .yaml file to .json context file
+
+def prechecking_yaml(yaml_data):
+    errors = []
+    if yaml_data is None:
+        errors.append('ERRORS:\n - You are parsing an empty .yaml file!')
+        sys.stderr.write("\n".join(errors) + "\n")
+        sys.exit(1)
+    
+    if "hosts" not in yaml_data:
+        errors.append('- "hosts" must be included in the .yaml file!')
+    else:
+        if yaml_data["hosts"] is None:
+            errors.append('- "hosts" must not be left empty!')
+        else:
+            for host in yaml_data["hosts"]:
+                if "name" not in host:
+                    errors.append('- A host is missing the "name" field.')
+                if "ipaddresses" not in host:
+                    errors.append(f'- Host "{host.get("name", "unknown")}" must have "ipaddresses" field.')
+                if "label" not in host:
+                    errors.append(f'- Host "{host.get("name", "unknown")}" must have "label" field.')
+                if "ssh-user" not in host:
+                    errors.append(f'- Host "{host.get("name", "unknown")}" must have "ssh-user" field.')
+
+    # Check for services
+    if "services"  in yaml_data and yaml_data['services'] is not None:
+        if "radosgw"  in yaml_data["services"]:
+            radosgw = yaml_data["services"]["radosgw"]
+            if radosgw is None: 
+                errors.append('- "services.radosgw.service_list" field is not in .yaml file!. ')
+            elif "service_list" not in radosgw or radosgw["service_list"] is None:
+                errors.append('- "services.radosgw.service_list" must contain at least one service. ')
+            else:
+                for service in radosgw["service_list"]:
+                    if "name" not in service:
+                        errors.append('- Each service in "service_list" must have a "name" field')
+                if "user" in radosgw and radosgw["user"] is not None:
+                    for user in radosgw["user"]:
+                        if "uid" not in user:
+                            errors.append('- "user" must have a "uid" field.')
+                        if "display_name" not in user:
+                            errors.append('- "user" must have a "display_name" field.')
+
+                if "zone" in radosgw and radosgw["zone"] is not None:
+                    for zone in radosgw["zone"]:
+                        if "name" not in zone or "uid" not in zone or "zonegroup" not in zone:
+                            errors.append('- Each zone must include "name", "uid", and "zonegroup".')
+
+                if "zonegroup" in radosgw and radosgw["zonegroup"] is not None:
+                    for zonegroup in radosgw["zonegroup"]:
+                        if "name" not in zonegroup or "realm" not in zonegroup:
+                            errors.append('- Each zonegroup must include "name" and "realm".')
+
+                if "realm" in radosgw and radosgw["realm"] is not None:
+                    for realm in radosgw["realm"]:
+                        if "name" not in realm:
+                            errors.append('- Each realm must include "name".')
+        
+        if "add-osds" in yaml_data['services'] and yaml_data['services']['add-osds'] is not None:
+            add_osds = yaml_data['services']["add-osds"]
+            for osd in add_osds:
+                if "service-id" not in osd:
+                    errors.append('- Each entry in "add-osds" must have a "service-id".')
+                if "placement" not in osd or osd["placement"] is None:
+                    errors.append('- Each entry in "add-osds" must have a non-empty "placement" field.')
+                elif "hosts" not in osd["placement"] or osd["placement"]["hosts"] is None:
+                    errors.append(f'- "Host" in {osd.get("service-id", "unknown")} must not be an empty array! .')
+                if "spec" not in osd or osd["spec"] is None:
+                    errors.append('- Each entry in "add-osds" must have a "spec" field.')
+                else:
+                    if "data_devices" not in osd.get("spec", {}):
+                        errors.append('- "spec" must include "data_devices".')
+                    if "size" not in osd["spec"]["data_devices"]:
+                        errors.append('- "data_devices" must include "size".')
+        if "remove-osds" in yaml_data['services'] and yaml_data['services']['remove-osds'] is not None:
+            remove_osds = yaml_data['services']["remove-osds"]
+            if "id-lists" not in remove_osds or not remove_osds["id-lists"]:
+                errors.append('- "remove-osds" must include a non-empty "id-lists".')
+    if errors:
+        errors.insert(0, "ERRORS:")
+        sys.stderr.write("\n".join(errors) + "\n")
+        print('-----------------------STOPPING THE PROCESS------------------------')
+        sys.exit(1)
+
 def translate_yaml_to_json(yaml_file):
-    with open(yaml_file, 'r') as f:
-        yaml_data = yaml.safe_load(f)
+    try:
+        with open(yaml_file, 'r') as f:
+            yaml_data = yaml.safe_load(f)
+    except:
+        sys.stderr.write('ERRORS:\n - you are not parsing in a .yaml or .yml file!\n')
+        sys.exit(1)
+    print('------------------------CHECKING YAML FILE-------------------------')
+    prechecking_yaml(yaml_data)
+    print("Checking completed! proceeding to the next steps")
     print('-------------TRANSLATING YAML TO BASH AND CONTEXT FILES------------')
     hosts = yaml_data['hosts']
     services = yaml_data.get('services', {})
@@ -6407,15 +6497,11 @@ def main() -> None:
     av: List[str] = []
     av = sys.argv[1:]
     if av[0] == 'apply':
-        # try:
-            json_data = translate_yaml_to_json(av[1])
-            with tempfile.NamedTemporaryFile('w', delete=False, suffix='.json') as temp_file:
-                json.dump(json_data, temp_file, indent=4)
-                temp_file_path = temp_file.name
-            ctx = load_context_from_file(temp_file_path)
-        # except:
-        #     sys.stderr.write('No .yaml file specified or .yaml file doesn\'t exist, please pass a .yaml file\n')
-        #     sys.exit(1)
+        json_data = translate_yaml_to_json(av[1])
+        with tempfile.NamedTemporaryFile('w', delete=False, suffix='.json') as temp_file:
+            json.dump(json_data, temp_file, indent=4)
+            temp_file_path = temp_file.name
+        ctx = load_context_from_file(temp_file_path)
     else:
         ctx = cephadm_init_ctx(av)
 
@@ -6432,7 +6518,6 @@ def main() -> None:
 
     for f in ctx.funcs:
         try:
-            # Determine the container engine (podman or docker)
             ctx.container_engine = find_container_engine(ctx)
             if f not in [
                 command_check_host,

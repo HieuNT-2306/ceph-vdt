@@ -1,0 +1,53 @@
+hosts:
+ 
+- name: ceph-node-1
+  ipaddresses: 171.254.95.193
+
+
+- ipaddresses: 171.254.95.156
+  label: _admin,mgr,mon,osd,rgw
+  ssh-user: root
+
+- name: ceph-node-3
+  label: osd,mgr
+
+services: 
+  radosgw: 
+    service_list:
+      - port: 8888
+        count-per-host: 1
+    user:
+
+    zone:
+      - name: vn-central-1a-test
+        default: true
+        uid: test
+        zonegroup: vn-central-1-test
+        storage_classes:
+          default-placement: 
+            storage_class: SLIVER
+            data_pool: default.rgw.sliver.data
+          hdd-placement:
+            storage_class: STANDARD
+            data_pool: default.rgw.sliver.data
+            index_pool: default.rgw.buckets.hddplacement.index
+            data_extra_pool: default.rgw.buckets.hddplacement.non-ec
+    zonegroup:
+      - name: vn-central-1-test
+        default: true
+        realm: test
+    realm:
+      - name: test
+        default: true
+
+  add-osds:
+    - service-id: osd_spec_hdd
+      placement: 
+        hosts:
+
+      spec:
+
+  remove-osds:
+    id-lists:
+
+    zap_devices: true
