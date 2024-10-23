@@ -6353,7 +6353,7 @@ def generate_ceph_commands(hosts, services):
                 if zg.get('default', True):
                     print(f"Renaming default zonegroup to: {zonegroup_name}")
                     commands.append(f'radosgw-admin zonegroup rename --rgw-zonegroup default --zonegroup-new-name={zonegroup_name}')
-                    commands.append(f'radosgw-admin zonegroup modify --rgw-realm={realm_name} --rgw-zonegroup {zonegroup_name}= --master --default')
+                    commands.append(f'radosgw-admin zonegroup modify --rgw-realm={realm_name} --rgw-zonegroup={zonegroup_name} --master --default')
                 else: 
                     print(f"Creating new zonegroup: {zonegroup_name}")
                     commands.append(f"radosgw-admin zonegroup create --rgw-zonegroup={zonegroup_name} --endpoints={zg['endpoint']} --rgw-realm={realm_name}")
@@ -6365,6 +6365,7 @@ def generate_ceph_commands(hosts, services):
                 zone_name = zone.get('name', '')
                 if not access_key or not secret_key:
                     print(f"Error: Missing access_key or secret_key for {zone['uid']}")
+                    commands.append("# SKIP MODIFIYING ZONE {zone_name}")
                     continue
 
                 if zone.get('default', False):
@@ -6381,7 +6382,7 @@ def generate_ceph_commands(hosts, services):
                     storage_class = sc_data.get('storage_class', '')
                     index_pool = sc_data.get('index_pool', '')
                     data_extra_pool = sc_data.get('data_extra_pool', '')
-                    commands.append(f"radosgw-admin zonegroup placement add --rgw-zonegroup {zonegroup_name} --placement-id {sc_name} --storage-class {storage_class}")
+                    commands.append(f"radosgw-admin zonegroup placement add --rgw-zonegroup={zonegroup_name} --placement-id {sc_name} --storage-class {storage_class}")
                     cmd = f"radosgw-admin zone placement add --rgw-zone {zone_name}  --placement-id {sc_name} --storage-class {storage_class}"
                     if data_pool:
                         create_pool(data_pool['name'], data_pool['pg_num'], commands)
